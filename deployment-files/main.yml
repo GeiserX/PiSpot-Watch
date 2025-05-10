@@ -1,0 +1,287 @@
+---
+- hosts: "{{ host }}" # This PlayBook is no longer a one-for-all Pi's due to the setting of the hostname
+
+  tasks:
+  - name: Get GPG Key for FluentBit
+    apt_key:
+      url: http://packages.fluentbit.io/fluentbit.key
+
+  - name: Add FluentBit repository to sources list
+    apt_repository:
+      repo: deb http://packages.fluentbit.io/raspbian jessie main
+
+  - name: Set Timezone
+    timezone:
+      name: America/Guadeloupe
+
+  - name: Set GPU memory to 16MB and save battery by switching off ACT LED of the Pi Zero
+    lineinfile:
+      path: "/boot/config.txt"
+      regexp: "{{ item.regexp }}"
+      line: "{{ item.line }}"
+    with_items:
+    - { regexp: "^gpu_mem", line: "gpu_mem=16" }
+    - { regexp: "^dtparam=act_led_activelow", line: "dtparam=act_led_activelow=on" }
+    - { regexp: "^dtparam=act_led_trigger", line: "dtparam=act_led_trigger=none" }
+
+  - name: Save battery by switching off the HDMI output
+    lineinfile:
+      path: /etc/rc.local
+      line: '/usr/bin/tvservice -o'
+      insertafter: '#!/bin/sh -e'
+
+  - name: Update and upgrade apt packages
+    apt:
+      upgrade: yes
+      update_cache: yes
+      cache_valid_time: 2592000 # 30 days
+
+  - name: Begin installing dependencies # https://pisupp.ly/papiruscode
+    apt:
+      name: "{{ packages }}"
+    vars:
+      packages:
+      - td-agent-bit # FluentBit
+      - git
+      - bc
+      - i2c-tools
+      - fonts-freefont-ttf
+      - whiptail
+      - make
+      - gcc
+      - python3-pil
+      - python3-smbus
+      - python3-dateutil
+      - libfuse-dev # Needed for the PaPiRus "gratis" driver
+      - python3-pip # Not needed here but needed after
+      - python-setuptools # Not needed here but needed after
+      - jq # Needed for extracting Vault Token
+
+
+  - name: Enable SPI and I2C in the Pi Zero
+    command:  "{{ item }}"
+    with_items:
+    - raspi-config nonint do_spi 0
+    - raspi-config nonint do_i2c 0
+
+  - name: Clone the official PaPiRus git repository
+    git:
+      depth: 1
+      repo: 'https://github.com/PiSupply/PaPiRus.git'
+      dest: /opt/PaPiRus
+
+  - name: Install libraries for PaPiRus
+    command: python3 setup.py install
+    ignore_errors: yes # It fails when it is already installed on the Pi
+    args:
+      chdir: /opt/PaPiRus/
+
+  - name: Clone the official repaper-gratis driver # https://github.com/PiSupply/PaPiRus/blob/master/bin/papirus-setup
+    git:
+      depth: 1
+      repo: 'https://github.com/repaper/gratis.git'
+      dest: /opt/gratis
+
+  - name: Build the drivers from source
+    command: "{{ item }}"
+    args:
+      chdir: /opt/gratis
+    with_items:
+    - make rpi EPD_IO=epd_io.h PANEL_VERSION='V231_G2'
+    - make rpi-install EPD_IO=epd_io.h PANEL_VERSION='V231_G2'
+
+  - name: Set PaPiRus screen size # https://github.com/PiSupply/PaPiRus/blob/master/bin/papirus-set
+    lineinfile:
+      path: /etc/default/epd-fuse
+      regexp: '^EPD_SIZE='
+      line: 'EPD_SIZE=2.0'
+
+  - name: Copy FluentBit Config file
+    copy:
+      src: conffiles/td-agent-bit.conf
+      dest: /etc/td-agent-bit/td-agent-bit.conf
+      owner: root
+      group: root
+      mode: 0644
+
+  - name: Install Python3 resources
+    pip:
+      executable: pip3
+      name:
+      - RPi.GPIO
+      - requests
+      - hvac # Needed later for the Vault
+
+  - name: Add user "gpconnect" to sudo
+    lineinfile:
+      path: /etc/sudoers.d/gpconnect
+      line: 'gpconnect ALL=NOPASSWD: /sbin/reboot, /bin/systemctl restart PiSpot.service, /bin/systemctl start PiSpot.service, /bin/systemctl stop PiSpot.service'
+      state: present
+      mode: 0440
+      create: yes
+      validate: 'visudo -cf %s'
+
+  - name: Copy wpa_supplicant.conf
+    copy:
+      src: conffiles/wpa_supplicant.conf
+      dest: /etc/wpa_supplicant/wpa_supplicant.conf
+      owner: root
+      group: root
+      mode: 0644
+      backup: yes # Just in case something fails
+
+  - name: Execute change-hostname.py
+    script: pyscripts/change-hostname.py "{{ hostname }}"
+
+  - name: Change permissions so as to run it from gpconnect user
+    file:
+      path: /opt/PiSpot
+      owner: gpconnect
+      group: gpconnect
+      recurse: yes
+
+  - name: Copy main.py
+    copy:
+      src: ../main.py
+      dest: /opt/PiSpot/main.py
+      owner: gpconnect
+      group: gpconnect
+      mode: 0644
+      backup: yes # Just in case something fails
+
+### MinIO ###
+
+  - name: Download logo on AWX
+    script: pyscripts/logo-download.py "{{ filename_logo }}"
+    delegate_to: localhost
+
+  - name: Copy logo to P
+    copy:
+      src: /tmp/logo.png
+      dest: /opt/PiSpot/logoGPConnect.png
+      owner: gpconnect
+      group: gpconnect
+      mode: '0644'
+
+### ### ###
+
+  - name: Create Pispot log directory
+    file:
+      path: /var/log/pispot
+      state: directory
+      mode: 0755
+      owner: gpconnect
+      group: gpconnect
+
+  - name: Copy sshbanner
+    copy:
+      src: sshbanner
+      dest: /home/gpconnect/.ssh/sshbanner
+
+  - name: Enable graceful shutdown on low battery
+    git:
+      depth: 1
+      repo: 'https://github.com/JuiceBoxZero/LowBatteryShutdown.git'
+      dest: /opt/LowBatteryShutdown
+
+  - name: Install binaries for the graceful shutdown
+    command: python3 setup.py install
+    args:
+      chdir: /opt/LowBatteryShutdown
+
+  - name: Copy service files
+    copy:
+      src: "{{ item }}"
+      dest: /etc/systemd/system/
+      directory_mode: yes
+    with_items:
+    - servicefiles/low-battery-shutdown.service
+    - servicefiles/papirus-clear.service
+    - servicefiles/pispot.service
+
+  - name: Enable the 3 service files and FluentBit
+    systemd:
+      name: "{{ item }}"
+      enabled: yes
+      state: started
+    with_items:
+    - low-battery-shutdown.service
+    - papirus-clear.service
+    - pispot.service
+    - td-agent-bit
+
+  - name: Restart to finalize the changes
+    reboot:
+      reboot_timeout: 60
+      post_reboot_delay: 15
+
+  - name: Enable epd-fuse service (It must be done after the reboot)
+    systemd:
+      name: epd-fuse.service
+      daemon_reload: yes
+      enabled: yes
+      state: started
+
+##############
+# Vault part #
+##############
+
+  - name: Set Vault Address and Vault token in AWX
+    lineinfile:
+      path: "/root/.bashrc"
+      regexp: "{{ item.regexp }}"
+      line: "{{ item.line }}"
+    with_items:
+    - { regexp: "^export VAULT_TOKEN=", line: "export VAULT_TOKEN=your-vault-token" }
+    - { regexp: "^export VAULT_ADDR=", line: "export VAULT_ADDR=http://vault.your-net.local" }
+    delegate_to: localhost
+
+  - name: Generate a Wrapped Secret ID on AWX
+    shell: . /root/.bashrc; vault write -wrap-ttl=30 -f auth/approle/role/pispot_voucher/secret-id metadata='{"hostname":"{{ hostname }}"}' -format=json | jq '.wrap_info.token'
+    delegate_to: localhost
+    register: wrapped_secretid
+
+  - name: Clean Wrapped Secret ID
+    set_fact:
+      wrapped_token_clean: "{{ wrapped_secretid.stdout | replace('\"', '') | replace('\','') }}"
+
+  - name: Upload Python3 script to Unwrap SecretID, get Approle Token and write it to environment
+    copy:
+      src: pyscripts/get-approle-token.py
+      dest: /tmp/get-approle-token.py
+      owner: root
+      group: root
+      mode: a+x
+
+  - name: Get Approle Token
+    shell: '. /etc/profile; python3 /tmp/get-approle-token.py "{{ wrapped_token_clean }}"'
+
+  - name: Create Vault log directory
+    file:
+      path: /var/log/vault
+      state: directory
+      mode: 0755
+      owner: gpconnect
+      group: gpconnect
+
+  - name: Copy Python file to renew token_clean
+    copy:
+      src: pyscripts/vault-renew-token-pi.py
+      dest: /bin/vault-renew-token-pi.py
+      owner: gpconnect
+      group: gpconnect
+      mode: a+x
+
+  - name: Set the cron job to renew token_clean
+    cron:
+      user: gpconnect
+      name: "Renew Vault Token weekly"
+      weekday: 0
+      hour: 0
+      minute: 0
+      job: "/usr/bin/python3 /bin/vault-renew-token-pi.py"
+
+  - name: Restart to finalize the LAST changes
+    reboot:
+      reboot_timeout: 60
+      post_reboot_delay: 15

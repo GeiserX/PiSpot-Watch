@@ -1,0 +1,15 @@
+[Unit]
+Description=PiSpot_Voucher Service
+Wants=epd-fuse.service
+After=epd-fuse.service
+
+[Service]
+Type=simple
+User=gpconnect
+WorkingDirectory=/opt/PiSpot
+EnvironmentFile=/etc/profile_systemd
+ExecStart=/usr/bin/python3 /opt/PiSpot/main.py
+Restart=on-failure
+
+[Install]
+WantedBy=multi-user.target

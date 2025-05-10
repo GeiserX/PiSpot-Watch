@@ -1,0 +1,9 @@
+- hosts: PiSpot_Voucher
+  serial: 5 ### MAXIMUM HOSTS TO CONNECT TO AT A SINGLE TIME
+  gather_facts: false
+  tasks:
+  - name: Update and upgrade apt packages
+    apt:
+      upgrade: yes
+      update_cache: yes
+      cache_valid_time: 2592000 # 30 days

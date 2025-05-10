@@ -1,0 +1,13 @@
+[Unit]
+Description=JuiceBox Low Battery Service
+After=local-fs.target
+
+[Service]
+Type=simple
+User=root
+WorkingDirectory=/opt/LowBatteryShutdown
+ExecStart=/usr/bin/python /opt/LowBatteryShutdown/LowBatteryShutdown.py
+Restart=on-failure
+
+[Install]
+WantedBy=multi-user.target
