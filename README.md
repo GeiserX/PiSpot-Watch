@@ -1,4 +1,5 @@
 <img src="https://github.com/GeiserX/PiSpot-Watch/blob/main/extra/logo.jpg?raw=true" width="128" height="128">
+
 # PiSpot Watch
 
 [![pispot-watch compliant](https://img.shields.io/github/license/GeiserX/PiSpot-Watch)](https://github.com/GeiserX/PiSpot-Watch/blob/main/LICENSE)
