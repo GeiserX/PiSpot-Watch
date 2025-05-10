@@ -1,0 +1,13 @@
+[Unit]
+Description=Run papirus-clear at shutdown
+Wants=epd-fuse.service
+After=epd-fuse.service
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+ExecStart=/bin/true
+ExecStop=/usr/local/bin/papirus-clear
+
+[Install]
+WantedBy=multi-user.target
