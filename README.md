@@ -4,7 +4,7 @@
 
 [![pispot-watch compliant](https://img.shields.io/github/license/GeiserX/PiSpot-Watch)](https://github.com/GeiserX/PiSpot-Watch/blob/main/LICENSE)
 
-Wrist-wearable IoT device based on Raspberry Pi Zero, PiJuice and Papirus Zero to provide Wi-Fi voucher codes. Previously known as PiSpot Voucher. Developed and deployed in 2018 for the company GPConnect. I have decided to release the project as open-source due to the client's inability to proceed with payment.
+Wrist-wearable IoT device based on Raspberry Pi Zero with a PaPiRus Zero to provide Wi-Fi voucher codes. Previously known as PiSpot Voucher. Developed and deployed in 2018 for the company GPConnect. I have decided to release the project as open-source due to the client's inability to proceed with payment.
 
 ## Table of Contents
 
