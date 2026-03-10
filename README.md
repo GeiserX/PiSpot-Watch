@@ -47,6 +47,12 @@ Originally developed and deployed in 2018 for the company GPConnect, this projec
 
 ## Videos
 
+### In Action
+
+[![PiSpot Watch In Action](http://img.youtube.com/vi/wfsdekCCtP0/0.jpg)](http://www.youtube.com/watch?v=wfsdekCCtP0 "PiSpot Watch In Action")
+
+[![PiSpot Watch In Action 2](http://img.youtube.com/vi/Iu0-R4fZw-Q/0.jpg)](http://www.youtube.com/watch?v=Iu0-R4fZw-Q "PiSpot Watch In Action 2")
+
 ### Assembly
 
 [![PiSpot Watch Assembly](http://img.youtube.com/vi/riw7c_wJmEY/0.jpg)](http://www.youtube.com/watch?v=riw7c_wJmEY "PiSpot Watch Assembly")
@@ -54,6 +60,29 @@ Originally developed and deployed in 2018 for the company GPConnect, this projec
 ### Disassembly
 
 [![PiSpot Watch Disassembly](http://img.youtube.com/vi/lueef-ptVpc/0.jpg)](http://www.youtube.com/watch?v=lueef-ptVpc "PiSpot Watch Disassembly")
+
+---
+
+## Photos
+
+<p align="center">
+  <img src="docs/photos/watch-worn-on-wrist.jpg" width="300" alt="PiSpot Watch worn on wrist"/>
+  <img src="docs/photos/watch-in-action-voucher-code.jpg" width="300" alt="PiSpot Watch showing voucher code"/>
+</p>
+<p align="center">
+  <img src="docs/photos/watch-in-black-case-assembly.jpg" width="300" alt="Watch in black 3D-printed case"/>
+  <img src="docs/photos/device-in-white-case-base.jpg" width="300" alt="Device in white case base"/>
+</p>
+<p align="center">
+  <img src="docs/photos/eink-display-gpconnect-logo-closeup.jpg" width="300" alt="E-ink display with GPConnect logo"/>
+  <img src="docs/photos/weight-measurement-60g.jpg" width="300" alt="Device weighing 60g on scale"/>
+</p>
+<p align="center">
+  <img src="docs/photos/three-watch-cases-batch.jpg" width="300" alt="Batch of three watch cases"/>
+  <img src="docs/photos/development-desk-overview.jpg" width="300" alt="Development desk with PiSpot devices"/>
+</p>
+
+See all photos in [`docs/photos/`](docs/photos/).
 
 ---
 
